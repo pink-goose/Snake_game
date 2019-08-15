@@ -6,10 +6,11 @@ import pygame
 
 class Game:
     def __init__(self):
-        self.screen_width = 500
+        self.screen_width = 600
         self.screen_height = 500
 
         self.fps_controller = pygame.time.Clock()
+        self.FPS = 18
 
         self.score = 0
 
@@ -35,37 +36,61 @@ class Game:
                     quit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
-                        selected = 'Start'
-                    elif event.key == pygame.K_DOWN:
-                        selected = 'Quit'
+                        if selected == 'Speed':
+                            selected = 'Start'
+                        elif selected == 'Quit':
+                            selected = 'Speed'
+                        else:
+                            selected = 'Quit'
+                    if event.key == pygame.K_DOWN:
+                        if selected == 'Start':
+                            selected = 'Speed'
+                        elif selected == 'Speed':
+                            selected = 'Quit'
+                        else:
+                            selected = 'Start'
+                    if event.key == pygame.K_LEFT:
+                        if selected == 'Speed':
+                            if self.FPS > 10:
+                                self.FPS -= 1
+                    if event.key == pygame.K_RIGHT:
+                        if selected == 'Speed':
+                            if self.FPS < 60:
+                                self.FPS += 1
                     if event.key == pygame.K_RETURN:
                         if selected == 'Start':
-                            print('Start')
-                            run()
+                            menu = False
+                            run_game()
                         if selected == 'Quit':
                             pygame.quit()
                             quit()
 
             self.surface.fill((98, 48, 98))
 
-            text_title = self.text_renderer('Snake Game', (0, 255, 0), 30)
+            text_title = self.text_renderer('Snake Game', (20, 255, 20), 34)
 
             if selected == 'Start':
-                text_start = self.text_renderer('Start', (250, 250, 250), 20)
+                text_start = self.text_renderer('Start', (250, 250, 250), 26)
             else:
-                text_start = self.text_renderer('Start', (0, 0, 0), 20)
+                text_start = self.text_renderer('Start', (0, 30, 0), 22)
+            if selected == 'Speed':
+                text_speed = self.text_renderer(f'< Speed: {self.FPS} >', (250, 250, 250), 26)
+            else:
+                text_speed = self.text_renderer(f'Speed: {self.FPS}', (0, 30, 0), 22)
             if selected == 'Quit':
-                text_quit = self.text_renderer('Quit', (250, 250, 250), 20)
+                text_quit = self.text_renderer('Quit', (250, 250, 250), 26)
             else:
-                text_quit = self.text_renderer('Quit', (0, 0, 0), 20)
+                text_quit = self.text_renderer('Quit', (0, 30, 0), 22)
 
             rect_title = text_title.get_rect()
             rect_start = text_start.get_rect()
+            rect_speed = text_speed.get_rect()
             rect_quit = text_quit.get_rect()
 
             self.surface.blit(text_title, (self.screen_width / 2 - (rect_title[2] / 2), 80))
             self.surface.blit(text_start, (self.screen_width / 2 - (rect_start[2] / 2), 180))
-            self.surface.blit(text_quit, (self.screen_width / 2 - (rect_quit[2] / 2), 220))
+            self.surface.blit(text_speed, (self.screen_width / 2 - (rect_speed[2] / 2), 220))
+            self.surface.blit(text_quit, (self.screen_width / 2 - (rect_quit[2] / 2), 260))
 
             pygame.display.update()
             game.refresh_screen()
@@ -88,21 +113,27 @@ class Game:
 
     def refresh_screen(self):
         pygame.display.flip()
-        game.fps_controller.tick(18)
+        game.fps_controller.tick(self.FPS)
 
     def show_score(self):
         font = pygame.font.SysFont('Ubuntu Mono', 18)
         surf = font.render(f'Score: {self.score}', True, (255, 255, 255))
         rect = surf.get_rect()
-        rect.midtop = (450, 10)
+        rect.midtop = (self.screen_width - 60, 10)
         self.surface.blit(surf, rect)
 
     def game_over(self):
-        font = pygame.font.SysFont('Ubuntu Mono', 32)
-        surf = font.render('Game over', True, (255, 255, 255))
-        rect = surf.get_rect()
-        rect.midtop = (250, 200)
-        self.surface.blit(surf, rect)
+        go_text = self.text_renderer(f'Game over', (255, 255, 255), 32)
+        score_text = self.text_renderer(f'Your score: {self.score}', (255, 255, 255), 16)
+
+        go_rect = go_text.get_rect()
+        score_rect = score_text.get_rect()
+
+        go_rect.midtop = (self.screen_width / 2, self.screen_height / 2.5)
+        score_rect.midtop = (self.screen_width / 2, self.screen_height / 2)
+
+        self.surface.blit(go_text, go_rect)
+        self.surface.blit(score_text, score_rect)
         pygame.display.flip()
         time.sleep(3)
         game.main_menu()
@@ -110,8 +141,8 @@ class Game:
 
 class Snake:
     def __init__(self):
-        self.snake_head_pos = [380, 50]
-        self.snake_body = [[380, 50], [390, 50], [400, 50], [410, 50], [420, 50], [430, 50]]
+        self.snake_head_pos = [320, 240]
+        self.snake_body = [[320, 240], [330, 240], [340, 240]]
         self.snake_color = (70, 255, 80)
         self.direction = 'LEFT'
         self.change_to = self.direction
@@ -124,13 +155,12 @@ class Snake:
 
     def crossing_border(self):
         if self.snake_head_pos[0] < 0:
-            # TODO set screen width
-            self.snake_head_pos[0] = 490
-        elif self.snake_head_pos[0] > 490:
+            self.snake_head_pos[0] = game.screen_width - 10
+        elif self.snake_head_pos[0] > game.screen_width - 10:
             self.snake_head_pos[0] = 0
         elif self.snake_head_pos[1] < 0:
-            self.snake_head_pos[1] = 490
-        elif self.snake_head_pos[1] > 490:
+            self.snake_head_pos[1] = game.screen_height - 10
+        elif self.snake_head_pos[1] > game.screen_height - 10:
             self.snake_head_pos[1] = 0
 
     def change_direction(self):
@@ -179,7 +209,7 @@ class Food:
                                                                self.food_size_x, self.food_size_y))
 
 
-def run():
+def run_game():
     snake = Snake()
     food = Food(game.screen_width, game.screen_height)
     game.set_title()
